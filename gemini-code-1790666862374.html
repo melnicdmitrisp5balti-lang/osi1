@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OSI Cyber Visualizer — Симуляция передачи данных</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Share+Tech+Mono&family=Plus+Jakarta+Sans:wght@400;600;700&display=swap">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    :root {
+      --bg-dark: #050811;
+      --panel-bg: rgba(13, 22, 41, 0.75);
+      --panel-border: rgba(56, 189, 248, 0.2);
+      --neon-cyan: #00f0ff;
+      --neon-green: #00ff66;
+      --neon-pink: #ff0055;
+      --neon-purple: #7000ff;
+      --neon-yellow: #ffe600;
+      --text-main: #e2e8f0;
+      --text-dim: #64748b;
+      
+      --l7-clr: #ff0055;
+      --l6-clr: #ff5500;
+      --l5-clr: #ffe600;
+      --l4-clr: #00ff66;
+      --l3-clr: #00f0ff;
+      --l2-clr: #7000ff;
+      --l1-clr: #00ffaa;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: var(--bg-dark);
+      background-image: 
+        radial-gradient(circle at 10% 20%, rgba(112, 0, 255, 0.15) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(0, 240, 255, 0.12) 0%, transparent 40%);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Progress Top Bar */
+    .progress-bar-container {
+      width: 100%;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.05);
+      position: relative;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--neon-cyan), var(--neon-green));
+      box-shadow: 0 0 10px var(--neon-cyan);
+      transition: width 0.4s ease;
+    }
+
+    header {
+      padding: 18px 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--panel-border);
+      background: rgba(5, 8, 17, 0.85);
+      backdrop-filter: blur(16px);
+      z-index: 10;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .brand-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, rgba(0,240,255,0.2), rgba(112,0,255,0.3));
+      border: 1px solid var(--neon-cyan);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--neon-cyan);
+      font-size: 20px;
+      box-shadow: 0 0 15px rgba(0,240,255,0.2);
+    }
+
+    .brand-text h1 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 18px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      background: linear-gradient(90deg, #fff, var(--neon-cyan));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .brand-text p {
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+
+    .control-deck {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .step-counter {
+      font-family: 'Share Tech Mono', monospace;
+      background: rgba(0, 240, 255, 0.08);
+      border: 1px solid rgba(0, 240, 255, 0.3);
+      color: var(--neon-cyan);
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+
+    .btn-cyber {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--panel-border);
+      color: var(--text-main);
+      padding: 10px 18px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.25s ease;
+    }
+
+    .btn-cyber:hover {
+      background: rgba(0, 240, 255, 0.1);
+      border-color: var(--neon-cyan);
+      color: var(--neon-cyan);
+      box-shadow: 0 0 12px rgba(0, 240, 255, 0.2);
+    }
+
+    .btn-cyber-primary {
+      background: linear-gradient(135deg, rgba(0,240,255,0.2), rgba(112,0,255,0.4));
+      border: 1px solid var(--neon-cyan);
+      color: #fff;
+    }
+
+    .btn-cyber-primary:hover {
+      background: linear-gradient(135deg, rgba(0,240,255,0.4), rgba(112,0,255,0.6));
+      box-shadow: 0 0 20px rgba(0,240,255,0.4);
+    }
+
+    .btn-cyber-danger:hover {
+      border-color: var(--neon-pink);
+      color: var(--neon-pink);
+      box-shadow: 0 0 12px rgba(255, 0, 85, 0.2);
+    }
+
+    main {
+      flex: 1;
+      padding: 24px 40px;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 24px;
+      max-width: 1700px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    /* Layout Grid */
+    .workspace {
+      display: grid;
+      grid-template-columns: 320px 1fr 320px;
+      gap: 24px;
+      align-items: stretch;
+    }
+
+    /* Node Column */
+    .node-column {
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 16px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      backdrop-filter: blur(12px);
+    }
+
+    .node-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--panel-border);
+    }
+
+    .node-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--panel-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--neon-cyan);
+      font-size: 18px;
+    }
+
+    .node-title h3 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 14px;
+      letter-spacing: 0.5px;
+    }
+
+    .node-title p {
+      font-size: 11px;
+      color: var(--text-dim);
+    }
+
+    .osi-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .layer-tile {
+      background: rgba(5, 8, 17, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 10px;
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .layer-tile::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 3px;
+      background: var(--tile-color, var(--neon-cyan));
+      opacity: 0.5;
+      transition: opacity 0.25s ease;
+    }
+
+    .layer-tile:hover {
+      background: rgba(255, 255, 255, 0.03);
+      border-color: rgba(255, 255, 255, 0.15);
+    }
+
+    .layer-tile.active {
+      background: rgba(0, 240, 255, 0.08);
+      border-color: var(--tile-color, var(--neon-cyan));
+      box-shadow: inset 0 0 15px rgba(0, 240, 255, 0.1);
+    }
+
+    .layer-tile.active::before {
+      opacity: 1;
+      box-shadow: 0 0 10px var(--tile-color, var(--neon-cyan));
+    }
+
+    .layer-meta {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .layer-num {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 12px;
+      color: var(--text-dim);
+      background: rgba(255, 255, 255, 0.05);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .layer-name {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+    }
+
+    /* Center Stage */
+    .center-stage {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* Terminal Inspector */
+    .terminal-card {
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 16px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      backdrop-filter: blur(12px);
+      flex: 1;
+    }
+
+    .terminal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--panel-border);
+      padding-bottom: 10px;
+    }
+
+    .terminal-title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 12px;
+      color: var(--neon-cyan);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      letter-spacing: 1px;
+    }
+
+    .protocol-chips {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .proto-chip {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: var(--text-dim);
+      transition: all 0.3s ease;
+    }
+
+    .proto-chip.active {
+      background: rgba(0, 240, 255, 0.15);
+      border-color: var(--neon-cyan);
+      color: var(--neon-cyan);
+      box-shadow: 0 0 10px rgba(0, 240, 255, 0.2);
+    }
+
+    .pdu-visualizer {
+      background: #02040a;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 120px;
+      overflow-x: auto;
+    }
+
+    .pdu-block {
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 13px;
+      font-weight: 700;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+      animation: zoomIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .pdu-block-bits {
+      background: linear-gradient(135deg, rgba(0, 255, 170, 0.2), rgba(0, 255, 170, 0.05));
+      border: 1px solid var(--neon-green);
+      color: var(--neon-green);
+      text-shadow: 0 0 8px var(--neon-green);
+      letter-spacing: 2px;
+    }
+
+    .pdu-block-data {
+      background: linear-gradient(135deg, rgba(0, 240, 255, 0.3), rgba(112, 0, 255, 0.3));
+      border: 1px solid var(--neon-cyan);
+      color: #fff;
+    }
+
+    @keyframes zoomIn {
+      from { transform: scale(0.7); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    /* Network Backbone */
+    .backbone-card {
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 16px;
+      padding: 16px 24px;
+      backdrop-filter: blur(12px);
+    }
+
+    .backbone-nodes {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: relative;
+    }
+
+    .backbone-line {
+      position: absolute;
+      top: 50%;
+      left: 40px;
+      right: 40px;
+      height: 2px;
+      background: rgba(255, 255, 255, 0.1);
+      transform: translateY(-50%);
+      z-index: 1;
+    }
+
+    .hw-node {
+      position: relative;
+      z-index: 2;
+      background: #050811;
+      border: 1px solid var(--panel-border);
+      border-radius: 12px;
+      padding: 10px 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.3s ease;
+    }
+
+    .hw-node i {
+      font-size: 18px;
+      color: var(--text-dim);
+      transition: all 0.3s ease;
+    }
+
+    .hw-node span {
+      font-size: 11px;
+      font-family: 'Share Tech Mono', monospace;
+      color: var(--text-dim);
+    }
+
+    .hw-node.active {
+      border-color: var(--neon-green);
+      box-shadow: 0 0 15px rgba(0, 255, 102, 0.2);
+    }
+
+    .hw-node.active i {
+      color: var(--neon-green);
+    }
+
+    /* Info Status Deck */
+    .status-deck {
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 16px;
+      padding: 20px 28px;
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      backdrop-filter: blur(12px);
+    }
+
+    .status-badge {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 240, 255, 0.05);
+      border: 1px solid rgba(0, 240, 255, 0.2);
+      border-radius: 12px;
+      padding: 12px 20px;
+      min-width: 140px;
+    }
+
+    .status-badge i {
+      font-size: 20px;
+      color: var(--neon-cyan);
+      margin-bottom: 4px;
+    }
+
+    .status-badge span {
+      font-size: 10px;
+      font-family: 'Orbitron', sans-serif;
+      letter-spacing: 1px;
+      color: var(--text-dim);
+    }
+
+    .status-details h4 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 15px;
+      color: var(--neon-cyan);
+      margin-bottom: 6px;
+      letter-spacing: 0.5px;
+    }
+
+    .status-details p {
+      font-size: 13px;
+      color: var(--text-main);
+      line-height: 1.6;
+    }
+
+    @media (max-width: 1200px) {
+      .workspace {
+        grid-template-columns: 1fr;
+      }
+      main {
+        padding: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Cyber Progress Indicator -->
+  <div class="progress-bar-container">
+    <div class="progress-bar-fill" id="progressBar"></div>
+  </div>
+
+  <header>
+    <div class="brand">
+      <div class="brand-icon"><i class="fa-solid fa-microchip"></i></div>
+      <div class="brand-text">
+        <h1>OSI Model Cyber Visualizer</h1>
+        <p>Инкапсуляция ➔ Физическая магистраль ➔ Деинкапсуляция</p>
+      </div>
+    </div>
+
+    <div class="control-deck">
+      <span class="step-counter" id="stepIndicator">STEP: 00 / 15</span>
+      <button class="btn-cyber" id="btnPrev" onclick="prevStep()"><i class="fa-solid fa-chevron-left"></i> Назад</button>
+      <button class="btn-cyber btn-cyber-primary" id="btnPlay" onclick="togglePlay()"><i class="fa-solid fa-play"></i> Старт</button>
+      <button class="btn-cyber" id="btnNext" onclick="nextStep()">Вперед <i class="fa-solid fa-chevron-right"></i></button>
+      <button class="btn-cyber btn-cyber-danger" onclick="resetAnimation()"><i class="fa-solid fa-arrow-rotate-right"></i> Сброс</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="workspace">
+      
+      <!-- SENDER NODE -->
+      <div class="node-column">
+        <div class="node-header">
+          <div class="node-avatar"><i class="fa-solid fa-server"></i></div>
+          <div class="node-title">
+            <h3>NODE_01 (SENDER)</h3>
+            <p>Узел отправителя</p>
+          </div>
+        </div>
+
+        <div class="osi-stack" id="leftStack">
+          <div class="layer-tile" data-layer="7" style="--tile-color: var(--l7-clr)" onclick="goToStep(1)">
+            <div class="layer-meta"><span class="layer-num">L7</span><span class="layer-name">ПРИКЛАДНОЙ</span></div>
+            <i class="fa-solid fa-desktop" style="color: var(--l7-clr)"></i>
+          </div>
+          <div class="layer-tile" data-layer="6" style="--tile-color: var(--l6-clr)" onclick="goToStep(2)">
+            <div class="layer-meta"><span class="layer-num">L6</span><span class="layer-name">ПРЕДСТАВИТЕЛЬСКИЙ</span></div>
+            <i class="fa-solid fa-shield-halved" style="color: var(--l6-clr)"></i>
+          </div>
+          <div class="layer-tile" data-layer="5" style="--tile-color: var(--l5-clr)" onclick="goToStep(3)">
+            <div class="layer-meta"><span class="layer-num">L5</span><span class="layer-name">СЕАНСОВЫЙ</span></div>
+            <i class="fa-solid fa-comments" style="color: var(--l5-clr)"></i>
+          </div>
+          <div class="layer-tile" data-layer="4" style="--tile-color: var(--l4-clr)" onclick="goToStep(4)">
+            <div class="layer-meta"><span class="layer-num">L4</span><span class="layer-name">ТРАНСПОРТНЫЙ</span></div>
+            <i class="fa-solid fa-truck-fast" style="color: var(--l4-clr)"></i>
+          </div>
+          <div class="layer-tile" data-layer="3" style="--tile-color: var(--l3-clr)" onclick="goToStep(5)">
+            <div class="layer-meta"><span class="layer-num">L3</span><span class="layer-name">СЕТЕВОЙ</span></div>
+            <i class="fa-solid fa-network-wired" style="color: var(--l3-clr)"></i>
+          </div>
+          <div class="layer-tile" data-layer="2" style="--tile-color: var(--l2-clr)" onclick="goToStep(6)">
+            <div class="layer-meta"><span class="layer-num">L2</span><span class="layer-name">КАНАЛЬНЫЙ</span></div>
+            <i class="fa-solid fa-link" style="color: var(--l2-clr)"></i>
+          </div>
+          <div class="layer-tile" data-layer="1" style="--tile-color: var(--l1-clr)" onclick="goToStep(7)">
+            <div class="layer-meta"><span class="layer-num">L1</span><span class="layer-name">ФИЗИЧЕСКИЙ</span></div>
+            <i class="fa-solid fa-bolt" style="color: var(--l1-clr)"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- CENTER MONITOR & BACKBONE -->
+      <div class="center-stage">
+        
+        <div class="terminal-card">
+          <div class="terminal-header">
+            <div class="terminal-title"><i class="fa-solid fa-terminal"></i> PDU FRAME INSPECTOR</div>
+            <div class="protocol-chips">
+              <span class="proto-chip" id="proto7">L7 HTTP/DNS</span>
+              <span class="proto-chip" id="proto6">L6 TLS/SSL</span>
+              <span class="proto-chip" id="proto5">L5 NetBIOS</span>
+              <span class="proto-chip" id="proto4">L4 TCP/UDP</span>
+              <span class="proto-chip" id="proto3">L3 IP/ICMP</span>
+              <span class="proto-chip" id="proto2">L2 Ethernet</span>
+              <span class="proto-chip" id="proto1">L1 Signal</span>
+            </div>
+          </div>
+
+          <div class="pdu-visualizer" id="packetStructure">
+            <div class="pdu-block pdu-block-data">PAYLOAD [DATA]</div>
+          </div>
+        </div>
+
+        <div class="backbone-card">
+          <div class="backbone-nodes">
+            <div class="backbone-line"></div>
+            <div class="hw-node" id="nodeSwitch1">
+              <i class="fa-solid fa-sitemap"></i>
+              <span>SWITCH_01</span>
+            </div>
+            <div class="hw-node" id="nodeRouter1">
+              <i class="fa-solid fa-route"></i>
+              <span>ROUTER_01</span>
+            </div>
+            <div class="hw-node" id="nodeRouter2">
+              <i class="fa-solid fa-route"></i>
+              <span>ROUTER_02</span>
+            </div>
+            <div class="hw-node" id="nodeSwitch2">
+              <i class="fa-solid fa-sitemap"></i>
+              <span>SWITCH_02</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- RECEIVER NODE -->
+      <div class="node-column">
+        <div class="node-header">
+          <div class="node-avatar"><i class="fa-solid fa-terminal"></i></div>
+          <div class="node-title">
+            <h3>NODE_02 (RECEIVER)</h3>
+            <p>Узел получателя</p>
+          </div>
+        </div>
+
+        <div class="osi-stack" id="rightStack">
+          <div class="layer-tile" data-layer="7" style="--tile-color: var(--l7-clr)" onclick="goToStep(15)">
+            <div class="layer-meta"><span class="layer-num">L7</span><span class="layer-name">ПРИКЛАДНОЙ</span></div>
+            <i class="fa-solid fa-desktop" style="color: var(--l7-clr)"></i>
+          </div>
+          <div class="layer-tile" data-layer="6" style="--tile-color: var(--l6-clr)" onclick="goToStep(14)">
+            <div class="layer-meta"><span class="layer-num">L6</span><span class="layer-name">ПРЕДСТАВИТЕЛЬСКИЙ</span></div>
+            <i class="fa-solid fa-shield-halved" style="color: var(--l6-clr)"></i>
+          </div>
+          <div class="layer-tile" data-layer="5" style="--tile-color: var(--l5-clr)" onclick="goToStep(13)">
+            <div class="layer-meta"><span class="layer-num">L5</span><span class="layer-name">СЕАНСОВЫЙ</span></div>
+            <i class="fa-solid fa-comments" style="color: var(--l5-clr)"></i>
+          </div>
+          <div class="layer-tile" data-layer="4" style="--tile-color: var(--l4-clr)" onclick="goToStep(12)">
+            <div class="layer-meta"><span class="layer-num">L4</span><span class="layer-name">ТРАНСПОРТНЫЙ</span></div>
+            <i class="fa-solid fa-truck-fast" style="color: var(--l4-clr)"></i>
+          </div>
+          <div class="layer-tile" data-layer="3" style="--tile-color: var(--l3-clr)" onclick="goToStep(11)">
+            <div class="layer-meta"><span class="layer-num">L3</span><span class="layer-name">СЕТЕВОЙ</span></div>
+            <i class="fa-solid fa-network-wired" style="color: var(--l3-clr)"></i>
+          </div>
+          <div class="layer-tile" data-layer="2" style="--tile-color: var(--l2-clr)" onclick="goToStep(10)">
+            <div class="layer-meta"><span class="layer-num">L2</span><span class="layer-name">КАНАЛЬНЫЙ</span></div>
+            <i class="fa-solid fa-link" style="color: var(--l2-clr)"></i>
+          </div>
+          <div class="layer-tile" data-layer="1" style="--tile-color: var(--l1-clr)" onclick="goToStep(9)">
+            <div class="layer-meta"><span class="layer-num">L1</span><span class="layer-name">ФИЗИЧЕСКИЙ</span></div>
+            <i class="fa-solid fa-bolt" style="color: var(--l1-clr)"></i>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- STATUS INFO PANEL -->
+    <div class="status-deck">
+      <div class="status-badge">
+        <i class="fa-solid fa-satellite-dish"></i>
+        <span>SYSTEM STATUS</span>
+      </div>
+      <div class="status-details">
+        <h4 id="infoTitle">ИНИЦИАЛИЗАЦИЯ СИСТЕМЫ</h4>
+        <p id="infoDesc">Нажмите кнопку «Вперед» или «Старт» для запуска симуляции передачи данных между NODE_01 и NODE_02.</p>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    let currentStep = 0;
+    let timer = null;
+    let isPlaying = false;
+
+    const steps = [
+      {
+        step: 0,
+        title: "Готовность к отправке",
+        desc: "Данные подготовлены у NODE_01. Процесс инкапсуляции еще не начался.",
+        leftLayer: null,
+        rightLayer: null,
+        proto: null,
+        headers: ["DATE"],
+        node: null
+      },
+      {
+        step: 1,
+        title: "01. Прикладной уровень (Sender L7)",
+        desc: "Создается исходный пакет данных DATE и добавлена служебная информация L7H.",
+        leftLayer: 7,
+        rightLayer: null,
+        proto: 7,
+        headers: ["L7H", "DATE"],
+        node: null
+      },
+      {
+        step: 2,
+        title: "02. Представительский уровень (Sender L6)",
+        desc: "Преобразование данных, шифрование и добавлена заголовка L6H.",
+        leftLayer: 6,
+        rightLayer: null,
+        proto: 6,
+        headers: ["L6H", "L7H", "DATE"],
+        node: null
+      },
+      {
+        step: 3,
+        title: "03. Сеансовый уровень (Sender L5)",
+        desc: "Открытие логического сеанса и добавление заголовка управления L5H.",
+        leftLayer: 5,
+        rightLayer: null,
+        proto: 5,
+        headers: ["L5H", "L6H", "L7H", "DATE"],
+        node: null
+      },
+      {
+        step: 4,
+        title: "04. Транспортный уровень (Sender L4)",
+        desc: "Сегментация данных, назначение портов (TCP/UDP) и заголовок L4H.",
+        leftLayer: 4,
+        rightLayer: null,
+        proto: 4,
+        headers: ["L4H", "L5H", "L6H", "L7H", "DATE"],
+        node: null
+      },
+      {
+        step: 5,
+        title: "05. Сетевой уровень (Sender L3)",
+        desc: "Маршрутизация пакета, логическое адресование (IP) и заголовок L3H.",
+        leftLayer: 3,
+        rightLayer: null,
+        proto: 3,
+        headers: ["L3H", "L4H", "L5H", "L6H", "L7H", "DATE"],
+        node: null
+      },
+      {
+        step: 6,
+        title: "06. Канальный уровень (Sender L2)",
+        desc: "Формирование кадра (Frame), добавление физических адресов (MAC) L2H.",
+        leftLayer: 2,
+        rightLayer: null,
+        proto: 2,
+        headers: ["L2H", "L3H", "L4H", "L5H", "L6H", "L7H", "DATE"],
+        node: null
+      },
+      {
+        step: 7,
+        title: "07. Физический уровень (Sender L1)",
+        desc: "Кодирование всего кадра в двоичный поток импульсов (BITS).",
+        leftLayer: 1,
+        rightLayer: null,
+        proto: 1,
+        headers: ["BITS"],
+        node: null
+      },
+      {
+        step: 8,
+        title: "08. Магистральная трансляция сигналов",
+        desc: "Битовый поток передвигается по сетевому оборудованию: Switch 1 ➔ Router 1 ➔ Router 2 ➔ Switch 2.",
+        leftLayer: null,
+        rightLayer: null,
+        proto: 1,
+        headers: ["BITS"],
+        node: "all"
+      },
+      {
+        step: 9,
+        title: "09. Физический уровень (Receiver L1)",
+        desc: "NODE_02 считывает физические сигналы и преобразует их в бит-поток (BITS).",
+        leftLayer: null,
+        rightLayer: 1,
+        proto: 1,
+        headers: ["BITS"],
+        node: "nodeSwitch2"
+      },
+      {
+        step: 10,
+        title: "10. Канальный уровень (Receiver L2)",
+        desc: "Сборка кадра из бит, проверка MAC-адреса и проверка целостности.",
+        leftLayer: null,
+        rightLayer: 2,
+        proto: 2,
+        headers: ["L2H", "L3H", "L4H", "L5H", "L6H", "L7H", "DATE"],
+        node: null
+      },
+      {
+        step: 11,
+        title: "11. Сетевой уровень (Receiver L3)",
+        desc: "Удаление заголовка L2H, извлечение IP-пакета и заголовок L3H.",
+        leftLayer: null,
+        rightLayer: 3,
+        proto: 3,
+        headers: ["L3H", "L4H", "L5H", "L6H", "L7H", "DATE"],
+        node: null
+      },
+      {
+        step: 12,
+        title: "12. Транспортный уровень (Receiver L4)",
+        desc: "Удаление заголовка L3H, проверка портов соединения L4H.",
+        leftLayer: null,
+        rightLayer: 4,
+        proto: 4,
+        headers: ["L4H", "L5H", "L6H", "L7H", "DATE"],
+        node: null
+      },
+      {
+        step: 13,
+        title: "13. Сеансовый уровень (Receiver L5)",
+        desc: "Удаление заголовка L4H, синхронизация сессии L5H.",
+        leftLayer: null,
+        rightLayer: 5,
+        proto: 5,
+        headers: ["L5H", "L6H", "L7H", "DATE"],
+        node: null
+      },
+      {
+        step: 14,
+        title: "14. Представительский уровень (Receiver L6)",
+        desc: "Удаление L5H, расшифровка и декодирование формата данных L6H.",
+        leftLayer: null,
+        rightLayer: 6,
+        proto: 6,
+        headers: ["L6H", "L7H", "DATE"],
+        node: null
+      },
+      {
+        step: 15,
+        title: "15. Прикладной уровень (Receiver L7)",
+        desc: "Удаление последней оболочки L6H. Исходное сообщение передано приложению!",
+        leftLayer: null,
+        rightLayer: 7,
+        proto: 7,
+        headers: ["L7H", "DATE"],
+        node: null
+      }
+    ];
+
+    const layerColors = {
+      "L7H": "var(--l7-clr)",
+      "L6H": "var(--l6-clr)",
+      "L5H": "var(--l5-clr)",
+      "L4H": "var(--l4-clr)",
+      "L3H": "var(--l3-clr)",
+      "L2H": "var(--l2-clr)",
+      "BITS": "var(--neon-green)",
+      "DATE": "var(--neon-cyan)"
+    };
+
+    function updateUI() {
+      const state = steps[currentStep];
+
+      // Update Progress & Counter
+      document.getElementById("stepIndicator").innerText = `STEP: ${String(state.step).padStart(2, '0')} / ${steps.length - 1}`;
+      document.getElementById("progressBar").style.width = `${(currentStep / (steps.length - 1)) * 100}%`;
+      
+      document.getElementById("infoTitle").innerText = state.title;
+      document.getElementById("infoDesc").innerText = state.desc;
+
+      // Active Left Stack
+      document.querySelectorAll("#leftStack .layer-tile").forEach(card => {
+        if (state.leftLayer && card.getAttribute("data-layer") == state.leftLayer) {
+          card.classList.add("active");
+        } else {
+          card.classList.remove("active");
+        }
+      });
+
+      // Active Right Stack
+      document.querySelectorAll("#rightStack .layer-tile").forEach(card => {
+        if (state.rightLayer && card.getAttribute("data-layer") == state.rightLayer) {
+          card.classList.add("active");
+        } else {
+          card.classList.remove("active");
+        }
+      });
+
+      // Active Protocol Chips
+      document.querySelectorAll(".proto-chip").forEach(item => item.classList.remove("active"));
+      if (state.proto) {
+        const activeProto = document.getElementById(`proto${state.proto}`);
+        if (activeProto) activeProto.classList.add("active");
+      }
+
+      // Active Hardware Nodes
+      document.querySelectorAll(".hw-node").forEach(node => node.classList.remove("active"));
+      if (state.node === "all") {
+        document.querySelectorAll(".hw-node").forEach(node => node.classList.add("active"));
+      } else if (state.node) {
+        const activeNode = document.getElementById(state.node);
+        if (activeNode) activeNode.classList.add("active");
+      }
+
+      // Render PDU structure
+      const structureEl = document.getElementById("packetStructure");
+      structureEl.innerHTML = "";
+      state.headers.forEach(h => {
+        const div = document.createElement("div");
+        if (h === "BITS") {
+          div.className = "pdu-block pdu-block-bits";
+          div.innerText = "01010011 01001001 (BITS)";
+        } else if (h === "DATE") {
+          div.className = "pdu-block pdu-block-data";
+          div.innerText = "PAYLOAD [DATA]";
+        } else {
+          div.className = "pdu-block";
+          div.style.background = layerColors[h] || "var(--neon-cyan)";
+          div.innerText = h;
+        }
+        structureEl.appendChild(div);
+      });
+    }
+
+    function nextStep() {
+      if (currentStep < steps.length - 1) {
+        currentStep++;
+        updateUI();
+      } else {
+        pause();
+      }
+    }
+
+    function prevStep() {
+      if (currentStep > 0) {
+        currentStep--;
+        updateUI();
+      }
+    }
+
+    function goToStep(stepNum) {
+      currentStep = stepNum;
+      updateUI();
+    }
+
+    function resetAnimation() {
+      pause();
+      currentStep = 0;
+      updateUI();
+    }
+
+    function togglePlay() {
+      if (isPlaying) {
+        pause();
+      } else {
+        play();
+      }
+    }
+
+    function play() {
+      isPlaying = true;
+      document.getElementById("btnPlay").innerHTML = `<i class="fa-solid fa-pause"></i> Пауза`;
+      timer = setInterval(() => {
+        if (currentStep < steps.length - 1) {
+          nextStep();
+        } else {
+          pause();
+        }
+      }, 1500);
+    }
+
+    function pause() {
+      isPlaying = false;
+      document.getElementById("btnPlay").innerHTML = `<i class="fa-solid fa-play"></i> Старт`;
+      if (timer) clearInterval(timer);
+    }
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowRight") nextStep();
+      if (e.key === "ArrowLeft") prevStep();
+      if (e.key === " ") {
+        e.preventDefault();
+        togglePlay();
+      }
+    });
+
+    updateUI();
+  </script>
+</body>
+</html>
